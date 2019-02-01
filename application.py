@@ -7,11 +7,11 @@ import pickle as pkl
 import numpy as np
 import pandas as pd
 
-fname = "pickle_logreg4_model.pkl"
+fname = "pickle_RF_model.pkl"
 with open(fname, "rb") as InFile:
     model = pkl.load(InFile)
 
-fname = "pickle_logreg4_model_names.pkl"
+fname = "pickle_RF_model_names.pkl"
 with open(fname, "rb") as InFile:
     cols = pkl.load(InFile)
 
@@ -20,7 +20,7 @@ external_stylesheets = ["https://codepen.io/chriddyp/pen/bWLwgP.css"]
 app = dash.Dash(__name__, external_stylesheets=external_stylesheets)
 
 colors = {"background": "#ffb549", "text": "#111111"}
- 
+
 app.layout = html.Div(
     style={
         "backgroundColor": colors["background"],
@@ -91,39 +91,44 @@ app.layout = html.Div(
             id="other_meds",
             options=[{"label": "Yes", "value": "1"}, {"label": "No", "value": "0"}],
         ),
-        html.Label("Boston MA"),
+        html.Label("Observed Tick?"),
         dcc.Dropdown(
-            id="SITE__BO",
+            id="recall_current_bite",
             options=[{"label": "Yes", "value": "1"}, {"label": "No", "value": "0"}],
         ),
-        html.Label("East Hamptons NY"),
+        html.Label("Headache"),
         dcc.Dropdown(
-            id="SITE__EH",
+            id="headache",
             options=[{"label": "Yes", "value": "1"}, {"label": "No", "value": "0"}],
         ),
-        html.Label("Marthas Vinyard"),
+        html.Label("Fatigue"),
         dcc.Dropdown(
-            id="SITE__MV",
+            id="fatigue",
             options=[{"label": "Yes", "value": "1"}, {"label": "No", "value": "0"}],
         ),
-        html.Label("California"),
+        html.Label("Fever"),
         dcc.Dropdown(
-            id="SITE__CA",
+            id="fever",
             options=[{"label": "Yes", "value": "1"}, {"label": "No", "value": "0"}],
         ),
-        html.Label("Year 2014"),
+        html.Label("Chills"),
         dcc.Dropdown(
-            id="YR__2014",
+            id="chills",
             options=[{"label": "Yes", "value": "1"}, {"label": "No", "value": "0"}],
         ),
-        html.Label("Year 2015"),
+        html.Label("Joint and/or Muscle Pain"),
         dcc.Dropdown(
-            id="YR__2015",
+            id="joint_or_muscle_pain",
             options=[{"label": "Yes", "value": "1"}, {"label": "No", "value": "0"}],
         ),
-        html.Label("Year 2016"),
+        html.Label("City of Residence is Endemic (Eastern Seaboard)"),
         dcc.Dropdown(
-            id="YR__2016",
+            id="city_binary",
+            options=[{"label": "Yes", "value": "1"}, {"label": "No", "value": "0"}],
+        ),
+        html.Label("Multiple Locations of Rash on Body"),
+        dcc.Dropdown(
+            id="multiple_EM",
             options=[{"label": "Yes", "value": "1"}, {"label": "No", "value": "0"}],
         ),
         html.Label("Age: "),
@@ -134,6 +139,12 @@ app.layout = html.Div(
         html.Br(),
         html.Label("Month of Entry (no zero): "),
         dcc.Input(id="month_entry", value="0", type="number"),
+        html.Br(),
+        html.Label("Body Mass Index: "),
+        dcc.Input(id="body_mass_index", value="0", type="number"),
+        html.Br(),
+        html.Label("Years Living at Permanent Endemic Site Residence: "),
+        dcc.Input(id="yrs_at_residence", value="0", type="number"),
         html.Br(),
         html.Button(id="submit-button", children="Submit"),
         html.Div(id="output-a", style={"font-size": "36px", "text-align": "center"}),
@@ -154,16 +165,19 @@ app.layout = html.Div(
         State("past_history_lyme", "value"),
         State("cancer_history", "value"),
         State("other_meds", "value"),
-        State("SITE__BO", "value"),
-        State("SITE__EH", "value"),
-        State("SITE__MV", "value"),
-        State("SITE__CA", "value"),
-        State("YR__2014", "value"),
-        State("YR__2015", "value"),
-        State("YR__2016", "value"),
+        State("recall_current_bite", "value"),
+        State("headache", "value"),
+        State("fatigue", "value"),
+        State("fever", "value"),
+        State("chills", "value"),
+        State("joint_or_muscle_pain", "value"),
+        State("city_binary", "value"),
+        State("multiple_EM", "value"),
         State("age", "value"),
         State("number_of_symptoms", "value"),
         State("month_entry", "value"),
+        State("body_mass_index", "value"),
+        State("yrs_at_residence", "value"),
     ],
 )
 def predict(
@@ -177,16 +191,19 @@ def predict(
     past_history_lyme,
     cancer_history,
     other_meds,
-    SITE__BO,
-    SITE__EH,
-    SITE__MV,
-    SITE__CA,
-    YR__2014,
-    YR__2015,
-    YR__2016,
+    recall_current_bite,
+    headache,
+    fatigue,
+    fever,
+    chills,
+    joint_or_muscle_pain,
+    city_binary,
+    multiple_EM,
     age,
     number_of_symptoms,
     month_entry,
+    body_mass_index,
+    yrs_at_residence,
 ):
     imp = dict()
     imp["sex"] = sex
@@ -198,16 +215,19 @@ def predict(
     imp["past_history_lyme"] = past_history_lyme
     imp["cancer_history"] = cancer_history
     imp["other_meds"] = other_meds
-    imp["SITE__BO"] = SITE__BO
-    imp["SITE__EH"] = SITE__EH
-    imp["SITE__MV"] = SITE__MV
-    imp["SITE__CA"] = SITE__CA
-    imp["YR__2014"] = YR__2014
-    imp["YR__2015"] = YR__2015
-    imp["YR__2016"] = YR__2016
+    imp["recall_current_bite"] = recall_current_bite
+    imp["headache"] = headache
+    imp["fatigue"] = fatigue
+    imp["fever"] = fever
+    imp["chills"] = chills
+    imp["joint_or_muscle_pain"] = joint_or_muscle_pain
+    imp["city_binary"] = ethnicity_binary
+    imp["multiple_EM"] = multiple_EM
     imp["age"] = age
     imp["number_of_symptoms"] = number_of_symptoms
     imp["month_entry"] = month_entry
+    imp["body_mass_index"] = body_mass_index
+    imp["yrs_at_residence"] = yrs_at_residence
 
     imp = pd.Series(imp)
     print(imp)
